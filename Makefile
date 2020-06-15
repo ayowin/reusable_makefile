@@ -17,6 +17,8 @@ HEDAER_DEPENDS := $(addprefix $(BUILD_PATH)/,$(HEDAER_DEPENDS))
 # VPATH update
 VPATH += $(ALL_DIRS)
 
+# .PHONY declare: we suggest goals declared .PHONY which they have no dependencies
+# .PHONY: pre clean run
 # all
 all: pre compile link
 
@@ -26,11 +28,12 @@ $(TARGET): compile
 	$(CC) $(BUILD_PATH)/*.o -o $(BUILD_PATH)/$(TARGET) $(LIBS) $(CFLAGS)
 
 # compile
-compile: pre $(OBJECT_FILES)
+compile: $(OBJECT_FILES) $(HEDAER_DEPENDS)
 $(OBJECT_FILES): %.o : %.cpp %.d
 	$(CC) -c $< -o $(BUILD_PATH)/$@ $(INCLUDEPATH) $(LIBS) $(CFLAGS)
 
-# header files modified defection
+# header files modified defection for compile
+$(HEDAER_DEPENDS): pre
 -include $(HEDAER_DEPENDS)
 %.d: %.cpp
 	@set -e;
@@ -38,16 +41,17 @@ $(OBJECT_FILES): %.o : %.cpp %.d
 	@$(CC) $(CFLAGS) $(INCLUDEPATH) -MM $< > $(BUILD_PATH)/$@.$$$$; \
 		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $(BUILD_PATH)/$@.$$$$ > $(BUILD_PATH)/$@; \
 		rm -f $(BUILD_PATH)/$@.$$$$
-
-# clean
-.PHONY:
-clean:
-	rm -rf $(BUILD_PATH)
-	@echo "Clean success."
-
 # pre
 pre:
 ifneq ($(BUILD_PATH), $(wildcard $(BUILD_PATH)))
-	mkdir -p $(BUILD_PATH)
+	@mkdir -p $(BUILD_PATH)
 endif
 
+# run
+run:
+	./$(BUILD_PATH)/$(TARGET)
+
+# clean
+clean:
+	rm -rf $(BUILD_PATH)
+	@echo "Clean success."
